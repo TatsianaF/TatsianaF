@@ -56,6 +56,10 @@ class FilesMonitor:  # Creating the class for monitoring input folder
                 conn.execute("""INSERT INTO Logging 
                             VALUES 
                             (datetime('now','localtime'),'File for parsing was found')""")
+            else:
+                conn.execute("""INSERT INTO Logging 
+                                VALUES 
+                                (datetime('now','localtime'),'Error: The folder is empty')""")
             return file1
         pass
 
@@ -151,52 +155,57 @@ class FileParser:
                 count_words.append(count_word)
                 upper_cases.append(upper_case)
         return words, count_words, upper_cases
+
     pass
 
 
-Parser = FileParser()
+if file_for_parsing is not None:
 
-book_name = Parser.getting_book_name()
-paragraph_amount = Parser.counter_paragraph()
-words_amount = Parser.counter_words()
-letters_amount = Parser.counter_letters()
-lettersCL_amount = Parser.counter_words_with_capital_letters()
-letters_low_case_amount = Parser.counter_words_with_lower_case()
+    Parser = FileParser()
 
-conn.execute("""INSERT INTO Book_information 
-            VALUES ('%s', '%d', '%d', '%d', '%d', '%d')"""
-             % (book_name, paragraph_amount, words_amount, letters_amount, lettersCL_amount, letters_low_case_amount))
-conn.commit()
-conn.execute("""INSERT INTO Logging 
-            VALUES 
-            (datetime('now','localtime'),'The file was parsed and added to the table Book_information')""")
-conn.commit()
+    book_name = Parser.getting_book_name()
+    paragraph_amount = Parser.counter_paragraph()
+    words_amount = Parser.counter_words()
+    letters_amount = Parser.counter_letters()
+    lettersCL_amount = Parser.counter_words_with_capital_letters()
+    letters_low_case_amount = Parser.counter_words_with_lower_case()
 
-words_in_the_book_list, count_words_in_the_book, words_in_the_book_with_upper_cases = Parser.words_in_the_book()
-
-
-def table_creation():
-    now = datetime.now()
-    table_name = str(book_name) + '_' + str(now)
-    conn.execute("""CREATE TABLE '%s'
-                 (word text, count int, count_uppercase int)""" % table_name)
-    for i in range(len(words_in_the_book_list)):
-        conn.execute("""INSERT INTO '%s'  
-                    VALUES ('%s', '%d', '%d')"""
-                     % (table_name, words_in_the_book_list[i], count_words_in_the_book[i],
-                        words_in_the_book_with_upper_cases[i]))
-        conn.commit()
+    conn.execute("""INSERT INTO Book_information 
+                VALUES ('%s', '%d', '%d', '%d', '%d', '%d')"""
+                 % (
+                     book_name, paragraph_amount, words_amount, letters_amount, lettersCL_amount,
+                     letters_low_case_amount))
+    conn.commit()
     conn.execute("""INSERT INTO Logging 
-                VALUES
-                (datetime('now','localtime') ,'Statistics about words from the file was add to the table')""")
+                VALUES 
+                (datetime('now','localtime'),'The file was parsed and added to the table Book_information')""")
     conn.commit()
 
-
-def move_parsed_file():
-    shutil.move(file_for_parsing, '../Automation1/Output/')
-    conn.execute("INSERT INTO Logging VALUES (datetime('now','localtime'),'File was moved to the Output folder')")
+    words_in_the_book_list, count_words_in_the_book, words_in_the_book_with_upper_cases = Parser.words_in_the_book()
 
 
-Data_add = table_creation()
-Move_file = move_parsed_file()
-conn.commit()
+    def table_creation():
+        now = datetime.now()
+        table_name = str(book_name) + '_' + str(now)
+        conn.execute("""CREATE TABLE '%s'
+                     (word text, count int, count_uppercase int)""" % table_name)
+        for i in range(len(words_in_the_book_list)):
+            conn.execute("""INSERT INTO '%s'  
+                        VALUES ('%s', '%d', '%d')"""
+                         % (table_name, words_in_the_book_list[i], count_words_in_the_book[i],
+                            words_in_the_book_with_upper_cases[i]))
+            conn.commit()
+        conn.execute("""INSERT INTO Logging 
+                    VALUES
+                    (datetime('now','localtime') ,'Statistics about words from the file was add to the table')""")
+        conn.commit()
+
+
+    def move_parsed_file():
+        shutil.move(file_for_parsing, '../Automation1/Output/')
+        conn.execute("INSERT INTO Logging VALUES (datetime('now','localtime'),'File was moved to the Output folder')")
+
+
+    Data_add = table_creation()
+    Move_file = move_parsed_file()
+    conn.commit()
